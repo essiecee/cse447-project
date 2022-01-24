@@ -3,7 +3,7 @@ import os
 import string
 import random
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-
+from datasets import load_dataset
 
 class MyModel:
     """
@@ -14,6 +14,9 @@ class MyModel:
     def load_training_data(cls):
         # your code here
         # this particular model doesn't train
+        dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
+        print(dataset)
+        print(dataset[0]['text'])
         return []
 
     @classmethod
