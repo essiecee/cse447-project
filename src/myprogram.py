@@ -4,20 +4,30 @@ import string
 import random
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from datasets import load_dataset
+import nltk
+from nltk import word_tokenize
+from nltk.util import ngrams
 
 class MyModel:
     """
     This is a starter model to get you started. Feel free to modify this file.
     """
+    unigrams_count = {}
+    bigrams_count = {}
+    trigrams_count = {}
 
     @classmethod
     def load_training_data(cls):
         # your code here
         # this particular model doesn't train
         dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
-        print(dataset)
-        print(dataset[0]['text'])
-        return []
+        sentences = []
+        # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
+        num_rows = 2 # dataset.num_rows
+        for i in range(num_rows):
+            sentences.append(dataset[i]['text'])
+        # TODO: what should this function return? currently it returns a list of sentences (just two for now)
+        return sentences
 
     @classmethod
     def load_test_data(cls, fname):
@@ -37,7 +47,24 @@ class MyModel:
 
     def run_train(self, data, work_dir):
         # your code here
-        pass
+        for paragraph in data:
+            unigrams = ngrams(paragraph.split(), 1)
+            # each token in unigrams looks like ('word',)
+            # consider doing extra parsing for the raw text, e.g. token[0]
+            self.populate_frequency_maps(unigrams, MyModel.unigrams_count)
+
+            bigrams = ngrams(paragraph.split(), 2)
+            self.populate_frequency_maps(bigrams, MyModel.bigrams_count)
+
+            trigrams = ngrams(paragraph.split(), 3)
+            self.populate_frequency_maps(trigrams, MyModel.trigrams_count)
+
+    def populate_frequency_maps(self, ngrams, map):
+        for token in ngrams:
+            if token not in map:
+                map[token] = 1
+            else:
+                map[token] += 1
 
     def run_pred(self, data):
         # your code here
