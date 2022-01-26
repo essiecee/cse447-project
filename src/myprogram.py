@@ -41,6 +41,7 @@ def get_pred(context_input, context_dict, num_preds=3):
     assert len(context_dict[context_input]) >= num_preds
     # TODO: need to consider if context_input doesn't exist in context_dict
 
+
     # sorts frequency of each word given context in descending order
     topk_preds = context_dict[context_input].most_common()
     pred_list = [None] * num_preds
@@ -121,11 +122,6 @@ class MyModel:
 
             build_contexts(paragraph, self.bigrams_context_freq, n=2, word_mappings=self.word_mappings)
             build_contexts(paragraph, self.trigrams_context_freq, n=3, word_mappings=self.word_mappings)
-
-            # tokenize text and build contexts for n_gram models.
-            build_contexts(paragraph, self.unigrams_context_freq, n=1)
-            build_contexts(paragraph, self.bigrams_context_freq, n=2)
-            build_contexts(paragraph, self.trigrams_context_freq, n=3)
 
     def populate_frequency_maps(self, ngrams, map):
         for token in ngrams:
