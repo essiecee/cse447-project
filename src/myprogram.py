@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
-import string
+import json
+from pathlib import Path
+from ast import literal_eval
 import random
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from datasets import load_dataset
@@ -12,7 +14,7 @@ from typing import Dict
 from collections import defaultdict
 
 
-def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mappings={}):
+def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mappings=None):
     """
     build n_grams given n
     assigns each word x_t and their respective counts to their context x_{t-n+1:t-1}
@@ -20,7 +22,7 @@ def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mapp
     tokens = ['<s>'] * (n - 1)
     # UNK text as needed
     tokenized_text = word_tokenize(text)
-    if (word_mappings): # in the unigram model we shouldn't use word_mappings since it hasn't been constructed yet
+    if word_mappings:  # in the unigram model we shouldn't use word_mappings since it hasn't been constructed yet
         tokenized_text = [word_mappings[word] for word in tokenized_text]
     tokens.extend(tokenized_text)
     tokens.append('</s>')
@@ -29,7 +31,8 @@ def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mapp
     for ngram in n_grams:
         context = ngram[:-1]
         target = ngram[-1]
-        context_dict[context][target] += 1
+        # convert tuple keys to strings for json
+        context_dict[str(context)][target] += 1
 
 
 def get_pred(context_input, context_dict, num_preds=3):
@@ -69,14 +72,21 @@ class MyModel:
     """
     This is a starter model to get you started. Feel free to modify this file.
     """
-    unigrams_context_freq = defaultdict(FreqDist)
-    bigrams_context_freq = defaultdict(FreqDist)
-    trigrams_context_freq = defaultdict(FreqDist)
+    def __init__(self, n_grams_models=None):
+        if n_grams_models is None:
+            self.unigrams_context_freq = defaultdict(FreqDist)
+            self.bigrams_context_freq = defaultdict(FreqDist)
+            self.trigrams_context_freq = defaultdict(FreqDist)
+        else:
+            self.unigrams_context_freq = n_grams_models['unigrams']
+            self.bigrams_context_freq = n_grams_models['bigrams']
+            self.trigrams_context_freq = n_grams_models['trigrams']
 
-    # if a word appears less than x number of times, then it should be replaced by an UNK
-    UNK_THRESHOLD = 2
-    # token: "UNK" or token, depending on whether the token should be UNK-ed or not
-    word_mappings = {}
+        # if a word appears less than x number of times, then it should be replaced by an UNK
+        self.UNK_THRESHOLD = 2
+        # token: "UNK" or token, depending on whether the token should be UNK-ed or not
+        # probably don't need this when reloading the model? o.w. we should save it to file too
+        self.word_mappings = {}
 
     @classmethod
     def load_training_data(cls):
@@ -114,7 +124,7 @@ class MyModel:
             build_contexts(paragraph, self.unigrams_context_freq, n=1)
 
             # determine which tokens should be UNK-ed
-            for k, v in self.unigrams_context_freq[()].items():
+            for k, v in self.unigrams_context_freq['()'].items():
                 if v < self.UNK_THRESHOLD:
                     self.word_mappings[k] = "UNK"
                 else:
@@ -160,18 +170,34 @@ class MyModel:
         # return preds
 
     def save(self, work_dir):
-        # your code here
-        # this particular model has nothing to save, but for demonstration purposes we will save a blank file
-        with open(os.path.join(work_dir, 'model.checkpoint'), 'wt') as f:
-            f.write('dummy save')
+        n_grams_models = {
+            'unigrams': self.unigrams_context_freq,
+            'bigrams': self.bigrams_context_freq,
+            'trigrams': self.trigrams_context_freq
+        }
+        with open(os.path.join(work_dir, 'model.checkpoint'), 'w') as output_json:
+            json.dump(n_grams_models, output_json)
+
+        # # your code here
+        # # this particular model has nothing to save, but for demonstration purposes we will save a blank file
+        # with open(os.path.join(work_dir, 'model.checkpoint'), 'wt') as f:
+        #     f.write('dummy save')
 
     @classmethod
     def load(cls, work_dir):
-        # your code here
-        # this particular model has nothing to load, but for demonstration purposes we will load a blank file
-        with open(os.path.join(work_dir, 'model.checkpoint')) as f:
-            dummy_save = f.read()
-        return MyModel()
+        path = Path(os.path.join(work_dir, 'model.checkpoint'))
+        with open(path, 'rb') as f:
+            data = json.load(f)
+
+        # convert string keys back to tuples "('a', 'b')" -> ('a', 'b')
+        data = {ngram: {literal_eval(k): v for k, v in data[ngram].items()} for ngram in data}
+        return MyModel(n_grams_models=data)
+
+        # # your code here
+        # # this particular model has nothing to load, but for demonstration purposes we will load a blank file
+        # with open(os.path.join(work_dir, 'model.checkpoint')) as f:
+        #     dummy_save = f.read()
+        # return MyModel()
 
 
 if __name__ == '__main__':
@@ -192,7 +218,6 @@ if __name__ == '__main__':
         model = MyModel()
         print('Loading training data')
         train_data = MyModel.load_training_data()
-        print('train_data:', train_data)
         print('Training')
         model.run_train(train_data, args.work_dir)
         print('Saving model')
