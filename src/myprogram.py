@@ -150,10 +150,25 @@ class MyModel:
         bigram_preds = []
         trigram_preds = []
         for seq in data:
-            seq_list = seq.split()
+            seq_list = seq.split()  # example: ['Happy', 'New', 'Yea']
+            # this way, we will have full words only in our context
+            # we can then filter the predicted words for ones that start with the incomplete word's letters
+            context_list = seq_list[:-1]  # example: ['Happy', 'New']
             unigram_context = ()
-            bigram_context = tuple(seq_list[-1:])
-            trigram_context = tuple(seq_list[-2:])
+            # add start symbols for the contexts
+            if len(seq_list) == 1:
+                bigram_context = ('<s>',)
+            else:
+                bigram_context = tuple(context_list[-1:])
+            if len(seq_list) == 1:
+                trigram_context = ('<s>', '<s>')
+            elif len(seq_list) == 2:
+                trigram_context = ('<s>', context_list[-1])
+            else:
+                trigram_context = tuple(context_list[-2:])
+
+            # print("bigram_context = " + str(bigram_context))
+            # print("trigram_context = " + str(trigram_context))
 
             unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq)
             unigram_preds.append(''.join(unigram_top_guesses))
