@@ -44,6 +44,10 @@ def get_pred(context_input, context_dict, num_preds=3):
     assert len(context_dict[context_input]) >= num_preds
     # TODO: need to consider if context_input doesn't exist in context_dict
 
+    # convert all nested dicts to FreqDist so that we can use library utils like most_common()
+    for k in context_dict:
+        fdist = FreqDist(context_dict[k])
+        context_dict[k] = fdist
 
     # sorts frequency of each word given context in descending order
     topk_preds = context_dict[context_input].most_common()
@@ -57,7 +61,7 @@ def get_pred(context_input, context_dict, num_preds=3):
         for pred in topk_preds:
             word = pred[0]
             count = pred[1]
-            prob = count / topk_preds.N()
+            prob = count / (context_dict[context_input]).N() # topk_preds.N()
             prob_sum += prob
 
             if prob_sum > rand_prob and word not in ignore_words:
@@ -148,8 +152,8 @@ class MyModel:
         for seq in data:
             seq_list = seq.split()
             unigram_context = ()
-            bigram_context = seq_list[-1:]
-            trigram_context = seq_list[-2:]
+            bigram_context = tuple(seq_list[-1:])
+            trigram_context = tuple(seq_list[-2:])
 
             unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq)
             unigram_preds.append(''.join(unigram_top_guesses))
