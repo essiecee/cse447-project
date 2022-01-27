@@ -61,7 +61,7 @@ def get_pred(context_input, context_dict, num_preds=3):
         for pred in topk_preds:
             word = pred[0]
             count = pred[1]
-            prob = count / (context_dict[context_input]).N() # topk_preds.N()
+            prob = count / (context_dict[context_input]).N()  # topk_preds.N()
             prob_sum += prob
 
             if prob_sum > rand_prob and word not in ignore_words:
