@@ -59,14 +59,13 @@ def get_pred(context_input, context_dict, num_preds=3):
         prob_sum = 0
         rand_prob = random.random()
         for pred in topk_preds:
-            word = pred[0]
-            count = pred[1]
-            prob = count / (context_dict[context_input]).N() # topk_preds.N()
+            count = topk_preds[pred]
+            prob = count / (context_dict[context_input]).N()  # topk_preds.N()
             prob_sum += prob
 
-            if prob_sum > rand_prob and word not in ignore_words:
-                pred_list[i] = word
-                ignore_words.add(word)
+            if prob_sum > rand_prob and pred not in ignore_words:
+                pred_list[i] = pred
+                ignore_words.add(pred)
                 break
 
     return pred_list
