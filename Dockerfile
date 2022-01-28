@@ -7,3 +7,4 @@ VOLUME ["/job/data", "/job/src", "/job/work", "/job/output"]
 # RUN pip install tqdm
 RUN pip install nltk
 RUN pip install datasets
+RUN python -m nltk.downloader punkt
