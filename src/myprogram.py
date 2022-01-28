@@ -52,7 +52,7 @@ def get_pred(context_input, context_dict, num_preds=3):
         context_dict[k] = fdist
 
     # sorts frequency of each word given context in descending order
-    topk_preds = context_dict[context_input]
+    topk_preds = context_dict[context_input].most_common()
     pred_list = [None] * num_preds
     # ensure distinct word predictions
     ignore_words = set()
