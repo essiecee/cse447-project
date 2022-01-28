@@ -22,11 +22,13 @@ def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mapp
     tokens = ['<s>'] * (n - 1)
     # UNK text as needed
     tokenized_text = word_tokenize(text)
+
     if word_mappings:  # in the unigram model we shouldn't use word_mappings since it hasn't been constructed yet
         tokenized_text = [word_mappings[word] for word in tokenized_text]
     tokens.extend(tokenized_text)
     tokens.append('</s>')
     n_grams = ngrams(tokens, n)
+   
 
     for ngram in n_grams:
         context = ngram[:-1]
@@ -97,6 +99,7 @@ class MyModel:
         # your code here
         # this particular model doesn't train
         dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
+
         sentences = []
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
         num_rows = 2  # dataset.num_rows
@@ -137,6 +140,7 @@ class MyModel:
             build_contexts(paragraph, self.bigrams_context_freq, n=2, word_mappings=self.word_mappings)
             build_contexts(paragraph, self.trigrams_context_freq, n=3, word_mappings=self.word_mappings)
 
+
     def populate_frequency_maps(self, ngrams, map):
         for token in ngrams:
             if token not in map:
@@ -154,6 +158,16 @@ class MyModel:
             # this way, we will have full words only in our context
             # we can then filter the predicted words for ones that start with the incomplete word's letters
             context_list = seq_list[:-1]  # example: ['Happy', 'New']
+
+            # mapping all the words that we haven't seen yet to UNK
+            for i in range(len(context_list)):
+                word = context_list[i]
+                if word in self.word_mappings:
+                    word = self.word_mappings[word]
+                else:   # not in the mapping, set to UNK
+                    word = "UNK"
+                context_list[i] = word
+
             unigram_context = ()
             # add start symbols for the contexts
             if len(seq_list) == 1:
