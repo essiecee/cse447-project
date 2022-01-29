@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
 import json
+import string
+import random
 from pathlib import Path
 from ast import literal_eval
 import random
@@ -37,15 +39,29 @@ def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mapp
         context_dict[str(context)][target] += 1
 
 
-def get_pred(context_input, context_dict, num_preds=3):
+def get_pred(context_input, context_dict, target_word, num_preds=3):
     """
     return 3 distinct word predictions given context_input
     """
-    # we can assume there is at least 3 possible next words
-    # given context, if we use enough data
-    assert len(context_dict[context_input]) >= num_preds
-    # TODO: need to consider if context_input doesn't exist in context_dict
+    # case that context_input doesn't exist in the context_dict
+    # returns 3 letters that are random in that case
+    if context_input not in context_dict:
+        random_pred = []
+        for i in range(3):
+            random_pred.append(random.choice(string.ascii_letters))
+        return random_pred
 
+    # case where not enough target words for the given context
+    # inject random target words into the context_dict until there's enough for 3 predictions
+    # if there's any key, then there's guaranteed to be at least one target word value in the dictionary
+    while True:
+        try:
+            assert len(context_dict[context_input]) >= num_preds
+            print(context_dict[context_input])
+            break
+        except AssertionError:
+            context_dict[context_input][random.choice(string.ascii_letters)] = 1
+        
     # convert all nested dicts to FreqDist so that we can use library utils like most_common()
     for k in context_dict:
         fdist = FreqDist(context_dict[k])
@@ -53,24 +69,47 @@ def get_pred(context_input, context_dict, num_preds=3):
 
     # sorts frequency of each word given context in descending order
     topk_preds = context_dict[context_input].most_common()
-    pred_list = [None] * num_preds
+    pred_list = []
     # ensure distinct word predictions
     ignore_words = set()
 
-    for i in range(num_preds):
-        prob_sum = 0
-        rand_prob = random.random()
-        for pred in topk_preds:
-            word = pred[0]
-            count = pred[1]
-            prob = count / (context_dict[context_input]).N()  # topk_preds.N()
-            prob_sum += prob
 
-            if prob_sum > rand_prob and word not in ignore_words:
-                pred_list[i] = word
-                ignore_words.add(word)
-                break
-
+    for pred in topk_preds:
+        
+        # potential word that may match with target
+        word = pred[0]    # Ex. target_word is "on" and the word is "one" 
+        """
+        count = pred[1]
+        prob = count / (context_dict[context_input]).N()  # topk_preds.N()
+        prob_sum += prob
+        if prob_sum > rand_prob and word not in ignore_words:
+            pred_list[i] = word
+            ignore_words.add(word)
+            break
+        """
+        pred_letter = ""
+        # checking if the potential word matches up with the target word
+        # also checks that the potential word is longer so that there are characters we can pull from
+        if word.startswith(target_word) and len(target_word) < len(word):
+            pred_letter = word[len(target_word)]
+            
+            # to increase our chance of guessing the right character, we will look for other 
+            # characters and ignore the repeat characters
+            if pred_letter not in ignore_words:
+                pred_list.append(pred_letter)
+                if len(pred_list) == num_preds:
+                    break
+                ignore_words.add(pred_letter)
+    
+    # checking that we have 3 letters for sure as our prediction
+    while True:
+        try:
+            assert len(pred_list) == num_preds
+            break
+        except AssertionError:
+            pred_list.append(random.choice(string.ascii_letters))
+        
+    print(pred_list)
     return pred_list
 
 
@@ -181,14 +220,14 @@ class MyModel:
             else:
                 trigram_context = tuple(context_list[-2:])
 
+            
             # print("bigram_context = " + str(bigram_context))
             # print("trigram_context = " + str(trigram_context))
-
-            unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq)
+            unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq, seq_list[len(seq_list) - 1])
             unigram_preds.append(''.join(unigram_top_guesses))
-            bigram_top_guesses = get_pred(bigram_context, self.bigrams_context_freq)
+            bigram_top_guesses = get_pred(bigram_context, self.bigrams_context_freq, seq_list[len(seq_list) - 1])
             bigram_preds.append(''.join(bigram_top_guesses))
-            trigram_top_guesses = get_pred(trigram_context, self.trigrams_context_freq)
+            trigram_top_guesses = get_pred(trigram_context, self.trigrams_context_freq, seq_list[len(seq_list) - 1])
             trigram_preds.append(''.join(trigram_top_guesses))
 
         return unigram_preds, bigram_preds, trigram_preds
@@ -261,9 +300,9 @@ if __name__ == '__main__':
         print('Loading test data from {}'.format(args.test_data))
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
-        pred = model.run_pred(test_data)
+        _, _, trigram_pred = model.run_pred(test_data)
         print('Writing predictions to {}'.format(args.test_output))
-        assert len(pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(pred))
-        model.write_pred(pred, args.test_output)
+        assert len(trigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(trigram_pred))
+        model.write_pred(trigram_pred, args.test_output)
     else:
         raise NotImplementedError('Unknown mode {}'.format(args.mode))
