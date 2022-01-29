@@ -163,10 +163,9 @@ class MyModel:
 
     def run_train(self, data, work_dir):
         # your code here
-        count = 0
-        for paragraph in data:
-            print(count)
-            count += 1
+        for i, paragraph in enumerate(data):
+            if i % 1000 == 0:
+                print('training instance:', i)
             # tokenize text and build contexts for n_gram models.
             build_contexts(paragraph, self.unigrams_context_freq, n=1)
 
