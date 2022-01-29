@@ -57,7 +57,6 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
     while True:
         try:
             assert len(context_dict[context_input]) >= num_preds
-            print(context_dict[context_input])
             break
         except AssertionError:
             context_dict[context_input][random.choice(string.ascii_letters)] = 1
@@ -111,7 +110,6 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
         except AssertionError:
             pred_list.append(random.choice(string.ascii_letters))
         
-    print(pred_list)
     return pred_list
 
 
@@ -143,7 +141,7 @@ class MyModel:
 
         sentences = []
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
-        num_rows = 2  # dataset.num_rows
+        num_rows = dataset.num_rows  # 2 
         for i in range(num_rows):
             sentences.append(dataset[i]['text'])
         # TODO: what should this function return? currently it returns a list of sentences (just two for now)
