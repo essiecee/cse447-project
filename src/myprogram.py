@@ -130,7 +130,6 @@ class MyModel:
         # if a word appears less than x number of times, then it should be replaced by an UNK
         self.UNK_THRESHOLD = 2
         # token: "UNK" or token, depending on whether the token should be UNK-ed or not
-        # probably don't need this when reloading the model? o.w. we should save it to file too
         self.word_mappings = {}
 
     @classmethod
@@ -140,11 +139,9 @@ class MyModel:
         dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
 
         sentences = []
-        # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
-        num_rows = dataset.num_rows  # 2 
+        num_rows = dataset.num_rows
         for i in range(num_rows):
             sentences.append(dataset[i]['text'])
-        # TODO: what should this function return? currently it returns a list of sentences (just two for now)
         return sentences
 
     @classmethod
@@ -220,9 +217,6 @@ class MyModel:
             else:
                 trigram_context = tuple(context_list[-2:])
 
-            
-            # print("bigram_context = " + str(bigram_context))
-            # print("trigram_context = " + str(trigram_context))
             unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq, seq_list[len(seq_list) - 1])
             unigram_preds.append(''.join(unigram_top_guesses))
             bigram_top_guesses = get_pred(bigram_context, self.bigrams_context_freq, seq_list[len(seq_list) - 1])
@@ -231,15 +225,6 @@ class MyModel:
             trigram_preds.append(''.join(trigram_top_guesses))
 
         return unigram_preds, bigram_preds, trigram_preds
-
-        # # starter code for reference
-        # preds = []
-        # all_chars = string.ascii_letters
-        # for inp in data:
-        #     # this model just predicts a random character each time
-        #     top_guesses = [random.choice(all_chars) for _ in range(3)]
-        #     preds.append(''.join(top_guesses))
-        # return preds
 
     def save(self, work_dir):
         n_grams_models = {
@@ -250,11 +235,6 @@ class MyModel:
         with open(os.path.join(work_dir, 'model.checkpoint'), 'w') as output_json:
             json.dump(n_grams_models, output_json)
 
-        # # your code here
-        # # this particular model has nothing to save, but for demonstration purposes we will save a blank file
-        # with open(os.path.join(work_dir, 'model.checkpoint'), 'wt') as f:
-        #     f.write('dummy save')
-
     @classmethod
     def load(cls, work_dir):
         path = Path(os.path.join(work_dir, 'model.checkpoint'))
@@ -264,12 +244,6 @@ class MyModel:
         # convert string keys back to tuples "('a', 'b')" -> ('a', 'b')
         data = {ngram: {literal_eval(k): v for k, v in data[ngram].items()} for ngram in data}
         return MyModel(n_grams_models=data)
-
-        # # your code here
-        # # this particular model has nothing to load, but for demonstration purposes we will load a blank file
-        # with open(os.path.join(work_dir, 'model.checkpoint')) as f:
-        #     dummy_save = f.read()
-        # return MyModel()
 
 
 if __name__ == '__main__':
