@@ -88,9 +88,11 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
             break
         """
         pred_letter = ""
+
         # checking if the potential word matches up with the target word
         # also checks that the potential word is longer so that there are characters we can pull from
         if word.startswith(target_word) and len(target_word) < len(word):
+
             pred_letter = word[len(target_word)]
             
             # to increase our chance of guessing the right character, we will look for other 
@@ -300,9 +302,9 @@ if __name__ == '__main__':
         print('Loading test data from {}'.format(args.test_data))
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
-        _, _, trigram_pred = model.run_pred(test_data)
+        unigram_pred, _, trigram_pred = model.run_pred(test_data)
         print('Writing predictions to {}'.format(args.test_output))
-        assert len(trigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(trigram_pred))
-        model.write_pred(trigram_pred, args.test_output)
+        assert len(unigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(unigram_pred))
+        model.write_pred(unigram_pred, args.test_output)
     else:
         raise NotImplementedError('Unknown mode {}'.format(args.mode))
