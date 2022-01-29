@@ -139,12 +139,8 @@ class MyModel:
         dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
 
         sentences = []
-<<<<<<< HEAD
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
         num_rows = 10000  # 2 
-=======
-        num_rows = dataset.num_rows
->>>>>>> 1e8189018469439e6a93ac4f74fc3e8af63d8a71
         for i in range(num_rows):
             sentences.append(dataset[i]['text'])
         return sentences
