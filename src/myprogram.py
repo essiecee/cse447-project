@@ -141,7 +141,7 @@ class MyModel:
 
         sentences = []
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
-        num_rows = dataset.num_rows  # 2 
+        num_rows = 10000  # 2 
         for i in range(num_rows):
             sentences.append(dataset[i]['text'])
         # TODO: what should this function return? currently it returns a list of sentences (just two for now)
@@ -165,7 +165,10 @@ class MyModel:
 
     def run_train(self, data, work_dir):
         # your code here
+        count = 0
         for paragraph in data:
+            print(count)
+            count += 1
             # tokenize text and build contexts for n_gram models.
             build_contexts(paragraph, self.unigrams_context_freq, n=1)
 
