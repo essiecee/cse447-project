@@ -14,6 +14,8 @@ from nltk.util import ngrams
 from nltk import FreqDist
 from typing import Dict
 from collections import defaultdict
+from tqdm import tqdm
+import time
 
 
 def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mappings=None):
@@ -30,7 +32,7 @@ def build_contexts(text, context_dict: Dict[tuple, Dict[str, int]], n, word_mapp
     tokens.extend(tokenized_text)
     tokens.append('</s>')
     n_grams = ngrams(tokens, n)
-   
+
 
     for ngram in n_grams:
         context = ngram[:-1]
@@ -60,23 +62,23 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
             break
         except AssertionError:
             context_dict[context_input][random.choice(string.ascii_letters)] = 1
-        
+
     # convert all nested dicts to FreqDist so that we can use library utils like most_common()
-    for k in context_dict:
-        fdist = FreqDist(context_dict[k])
-        context_dict[k] = fdist
+    # for k in context_dict: # potential bottleneck???
+    #     fdist = FreqDist(context_dict[k])
+    #     context_dict[k] = fdist
 
     # sorts frequency of each word given context in descending order
-    topk_preds = context_dict[context_input].most_common()
+    topk_preds = context_dict[context_input] #.most_common()
     pred_list = []
     # ensure distinct word predictions
     ignore_words = set()
 
 
     for pred in topk_preds:
-        
+
         # potential word that may match with target
-        word = pred[0]    # Ex. target_word is "on" and the word is "one" 
+        word = pred[0]    # Ex. target_word is "on" and the word is "one"
         """
         count = pred[1]
         prob = count / (context_dict[context_input]).N()  # topk_preds.N()
@@ -93,15 +95,15 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
         if word.startswith(target_word) and len(target_word) < len(word):
 
             pred_letter = word[len(target_word)]
-            
-            # to increase our chance of guessing the right character, we will look for other 
+
+            # to increase our chance of guessing the right character, we will look for other
             # characters and ignore the repeat characters
             if pred_letter not in ignore_words:
                 pred_list.append(pred_letter)
                 if len(pred_list) == num_preds:
                     break
                 ignore_words.add(pred_letter)
-    
+
     # checking that we have 3 letters for sure as our prediction
     while True:
         try:
@@ -109,7 +111,7 @@ def get_pred(context_input, context_dict, target_word, num_preds=3):
             break
         except AssertionError:
             pred_list.append(random.choice(string.ascii_letters))
-        
+
     return pred_list
 
 
@@ -140,7 +142,7 @@ class MyModel:
 
         sentences = []
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
-        num_rows = 10000  # 2 
+        num_rows = 10000  # 2
         for i in range(num_rows):
             sentences.append(dataset[i]['text'])
         return sentences
@@ -163,10 +165,10 @@ class MyModel:
 
     def run_train(self, data, work_dir):
         # your code here
-        count = 0
+        # count = 0
         for paragraph in data:
-            print(count)
-            count += 1
+            # print(count)
+            # count += 1
             # tokenize text and build contexts for n_gram models.
             build_contexts(paragraph, self.unigrams_context_freq, n=1)
 
@@ -193,7 +195,7 @@ class MyModel:
         unigram_preds = []
         bigram_preds = []
         trigram_preds = []
-        for seq in data:
+        for seq in tqdm(data):
             seq_list = seq.split()  # example: ['Happy', 'New', 'Yea']
             # this way, we will have full words only in our context
             # we can then filter the predicted words for ones that start with the incomplete word's letters
@@ -231,6 +233,21 @@ class MyModel:
         return unigram_preds, bigram_preds, trigram_preds
 
     def save(self, work_dir):
+        start = time.perf_counter()
+        for context in self.unigrams_context_freq:
+            descending = self.unigrams_context_freq[context].most_common()
+            self.unigrams_context_freq[context] = descending
+
+        for context in self.bigrams_context_freq:
+            descending = self.bigrams_context_freq[context].most_common()
+            self.bigrams_context_freq[context] = descending
+
+        for context in self.trigrams_context_freq:
+            descending = self.trigrams_context_freq[context].most_common()
+            self.trigrams_context_freq[context] = descending
+
+        end = time.perf_counter()
+        print("time it took to convert: " + str(end - start))
         n_grams_models = {
             'unigrams': self.unigrams_context_freq,
             'bigrams': self.bigrams_context_freq,
@@ -274,13 +291,17 @@ if __name__ == '__main__':
         model.save(args.work_dir)
     elif args.mode == 'test':
         print('Loading model')
+        start_time = time.perf_counter()
         model = MyModel.load(args.work_dir)
+        end_time = time.perf_counter()
+        print("model loading took: " + str(end_time - start_time))
         print('Loading test data from {}'.format(args.test_data))
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
         unigram_pred, _, trigram_pred = model.run_pred(test_data)
         print('Writing predictions to {}'.format(args.test_output))
-        assert len(unigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(unigram_pred))
-        model.write_pred(unigram_pred, args.test_output)
+        # currently using trigram predictions
+        assert len(trigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(trigram_pred))
+        model.write_pred(trigram_pred, args.test_output)
     else:
         raise NotImplementedError('Unknown mode {}'.format(args.mode))
