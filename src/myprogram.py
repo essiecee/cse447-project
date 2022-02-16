@@ -138,13 +138,15 @@ class MyModel:
     def load_training_data(cls):
         # your code here
         # this particular model doesn't train
-        dataset = load_dataset('csebuetnlp/xlsum', 'english', split='train')
+        top_languages = ['english', 'spanish', 'chinese_simplified', 'hindi', 'arabic']
+        lang_datasets = [load_dataset('csebuetnlp/xlsum', lang, split='train') for lang in top_languages]
 
         sentences = []
         # TODO: set this to be dataset.num_rows when we want to train on a larger set of data
-        num_rows = 10000  # 2
-        for i in range(num_rows):
-            sentences.append(dataset[i]['text'])
+        num_rows = 2000  # 2
+        for dataset in lang_datasets:
+            for i in range(num_rows):
+                sentences.append(dataset[i]['text'])
         return sentences
 
     @classmethod
