@@ -126,8 +126,8 @@ class MyModel:
             self.trigrams_context_freq = defaultdict(FreqDist)
         else:
             self.unigrams_context_freq = n_grams_models['unigrams']
-            self.bigrams_context_freq = n_grams_models['bigrams']
-            self.trigrams_context_freq = n_grams_models['trigrams']
+            # self.bigrams_context_freq = n_grams_models['bigrams']
+            # self.trigrams_context_freq = n_grams_models['trigrams']
 
         # if a word appears less than x number of times, then it should be replaced by an UNK
         self.UNK_THRESHOLD = 2
@@ -178,8 +178,8 @@ class MyModel:
                 else:
                     self.word_mappings[k] = k
 
-            build_contexts(paragraph, self.bigrams_context_freq, n=2, word_mappings=self.word_mappings)
-            build_contexts(paragraph, self.trigrams_context_freq, n=3, word_mappings=self.word_mappings)
+            # build_contexts(paragraph, self.bigrams_context_freq, n=2, word_mappings=self.word_mappings)
+            # build_contexts(paragraph, self.trigrams_context_freq, n=3, word_mappings=self.word_mappings)
 
 
     def populate_frequency_maps(self, ngrams, map):
@@ -192,8 +192,8 @@ class MyModel:
     def run_pred(self, data):
         # your code here
         unigram_preds = []
-        bigram_preds = []
-        trigram_preds = []
+        # bigram_preds = []
+        # trigram_preds = []
         for seq in tqdm(data):
             seq_list = seq.split()  # example: ['Happy', 'New', 'Yea']
             # this way, we will have full words only in our context
@@ -224,12 +224,12 @@ class MyModel:
 
             unigram_top_guesses = get_pred(unigram_context, self.unigrams_context_freq, seq_list[len(seq_list) - 1])
             unigram_preds.append(''.join(unigram_top_guesses))
-            bigram_top_guesses = get_pred(bigram_context, self.bigrams_context_freq, seq_list[len(seq_list) - 1])
-            bigram_preds.append(''.join(bigram_top_guesses))
-            trigram_top_guesses = get_pred(trigram_context, self.trigrams_context_freq, seq_list[len(seq_list) - 1])
-            trigram_preds.append(''.join(trigram_top_guesses))
+            # bigram_top_guesses = get_pred(bigram_context, self.bigrams_context_freq, seq_list[len(seq_list) - 1])
+            # bigram_preds.append(''.join(bigram_top_guesses))
+            # trigram_top_guesses = get_pred(trigram_context, self.trigrams_context_freq, seq_list[len(seq_list) - 1])
+            # trigram_preds.append(''.join(trigram_top_guesses))
 
-        return unigram_preds, bigram_preds, trigram_preds
+        return unigram_preds #, bigram_preds, trigram_preds
 
     def save(self, work_dir):
         start = time.perf_counter()
@@ -237,20 +237,21 @@ class MyModel:
             descending = self.unigrams_context_freq[context].most_common()
             self.unigrams_context_freq[context] = descending
 
-        for context in self.bigrams_context_freq:
-            descending = self.bigrams_context_freq[context].most_common()
-            self.bigrams_context_freq[context] = descending
+        # for context in self.bigrams_context_freq:
+        #     descending = self.bigrams_context_freq[context].most_common()
+        #     self.bigrams_context_freq[context] = descending
 
-        for context in self.trigrams_context_freq:
-            descending = self.trigrams_context_freq[context].most_common()
-            self.trigrams_context_freq[context] = descending
+        # for context in self.trigrams_context_freq:
+        #     descending = self.trigrams_context_freq[context].most_common()
+        #     self.trigrams_context_freq[context] = descending
 
         end = time.perf_counter()
         print("time it took to convert: " + str(end - start))
         n_grams_models = {
-            'unigrams': self.unigrams_context_freq,
-            'bigrams': self.bigrams_context_freq,
-            'trigrams': self.trigrams_context_freq
+            'unigrams': self.unigrams_context_freq
+            # 'unigrams': self.unigrams_context_freq,
+            # 'bigrams': self.bigrams_context_freq,
+            # 'trigrams': self.trigrams_context_freq
         }
         with open(os.path.join(work_dir, 'model.checkpoint'), 'w') as output_json:
             json.dump(n_grams_models, output_json)
@@ -297,10 +298,11 @@ if __name__ == '__main__':
         print('Loading test data from {}'.format(args.test_data))
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
-        unigram_pred, _, trigram_pred = model.run_pred(test_data)
+        # unigram_pred, _, trigram_pred = model.run_pred(test_data)
+        unigram_pred = model.run_pred(test_data)
         print('Writing predictions to {}'.format(args.test_output))
         # currently using trigram predictions
-        assert len(trigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(trigram_pred))
-        model.write_pred(trigram_pred, args.test_output)
+        assert len(unigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(unigram_pred))
+        model.write_pred(unigram_pred, args.test_output)
     else:
         raise NotImplementedError('Unknown mode {}'.format(args.mode))
