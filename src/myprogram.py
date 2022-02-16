@@ -170,7 +170,7 @@ class MyModel:
         # your code here
         for i, paragraph in enumerate(data):
             if i % 1000 == 0:
-                print('training instance:', i)
+                print('training instance:', i, ' / ', len(data))
             # tokenize text and build contexts for n_gram models.
             build_contexts(paragraph, self.unigrams_context_freq, n=1)
 
@@ -238,7 +238,7 @@ class MyModel:
         start = time.perf_counter()
         for context in self.unigrams_context_freq:
             descending = self.unigrams_context_freq[context].most_common()
-            self.unigrams_context_freq[context] = descending
+            self.unigrams_context_freq[context] = descending[:(len(descending) // 2)]
 
         # for context in self.bigrams_context_freq:
         #     descending = self.bigrams_context_freq[context].most_common()
@@ -249,7 +249,7 @@ class MyModel:
         #     self.trigrams_context_freq[context] = descending
 
         end = time.perf_counter()
-        print("time it took to convert: " + str(end - start))
+        # print("time it took to convert: " + str(end - start))
         n_grams_models = {
             'unigrams': self.unigrams_context_freq
             # 'unigrams': self.unigrams_context_freq,
