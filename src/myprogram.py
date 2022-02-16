@@ -138,6 +138,7 @@ class MyModel:
     def load_training_data(cls):
         # your code here
         # this particular model doesn't train
+        # adding more languages other than English to be a little more robust/generalizable
         top_languages = ['english', 'spanish', 'chinese_simplified', 'hindi', 'arabic']
         lang_datasets = [load_dataset('csebuetnlp/xlsum', lang, split='train') for lang in top_languages]
 
@@ -291,7 +292,7 @@ if __name__ == '__main__':
         model.run_train(train_data, args.work_dir)
         print('Saving model')
         model.save(args.work_dir)
-    elif args.mode == 'test':
+    elif args.mode == 'test':    # chose unigram model as it gave us the best results during testing
         print('Loading model')
         start_time = time.perf_counter()
         model = MyModel.load(args.work_dir)
@@ -301,9 +302,9 @@ if __name__ == '__main__':
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
         # unigram_pred, _, trigram_pred = model.run_pred(test_data)
-        unigram_pred = model.run_pred(test_data)
+        unigram_pred = model.run_pred(test_data)    
         print('Writing predictions to {}'.format(args.test_output))
-        # currently using trigram predictions
+        # currently using unigram predictions
         assert len(unigram_pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(unigram_pred))
         model.write_pred(unigram_pred, args.test_output)
     else:
